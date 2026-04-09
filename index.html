@@ -1,152 +1,219 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Mini Football Game</title>
-
+<title>Realistic Football Game</title>
 <style>
-body {
-    margin: 0;
-    overflow: hidden;
-    background: green;
-}
-
+body { margin: 0; overflow: hidden; }
 #field {
     width: 100vw;
     height: 100vh;
     position: relative;
-    background: linear-gradient(#0a5, #070);
+    background: #0a5; /* placeholder grass */
 }
 
-.player, .ball, .enemy {
+/* Crowd */
+#crowd {
     position: absolute;
-    border-radius: 50%;
+    top: 0;
+    width: 100%;
+    height: 100px;
+    background: #888; /* placeholder crowd */
 }
 
+/* Player images */
 .player {
     width: 40px;
     height: 40px;
-    background: blue;
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid white;
+    background-size: cover;
 }
 
-.enemy {
-    width: 40px;
-    height: 40px;
-    background: red;
-}
-
-.ball {
-    width: 20px;
-    height: 20px;
+/* Ball */
+#ball {
+    width: 15px;
+    height: 15px;
     background: white;
+    border-radius: 50%;
+    position: absolute;
 }
 
+/* Coach */
+#coach {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    width: 60px;
+}
+
+/* Goal posts */
 .goal {
     position: absolute;
-    width: 20px;
-    height: 100px;
+    width: 10px;
+    height: 150px;
     background: white;
+    top: 50%;
+    transform: translateY(-50%);
 }
-
-#goal1 { left: 0; top: 40%; }
-#goal2 { right: 0; top: 40%; }
+#goal1 { left: 0; }
+#goal2 { right: 0; }
 
 #score {
     position: absolute;
-    top: 10px;
+    top: 110px;
     left: 10px;
     color: white;
-    font-size: 20px;
+    font-size: 24px;
 }
 </style>
-
 </head>
-
 <body>
 
 <div id="field">
-    <div id="player" class="player"></div>
-    <div id="enemy" class="enemy"></div>
-    <div id="ball" class="ball"></div>
-
+    <div id="crowd"></div>
+    <div id="ball"></div>
     <div id="goal1" class="goal"></div>
     <div id="goal2" class="goal"></div>
-
+    <img id="coach" src="https://i.imgur.com/1XK8ZQx.png" />
     <div id="score">0 - 0</div>
 </div>
 
+<!-- Sounds -->
+<audio id="kick" src="https://www.fesliyanstudios.com/play-mp3/387" preload="auto"></audio>
+<audio id="goal" src="https://www.fesliyanstudios.com/play-mp3/6821" preload="auto"></audio>
+
 <script>
-let player = document.getElementById("player");
-let enemy = document.getElementById("enemy");
-let ball = document.getElementById("ball");
-let scoreText = document.getElementById("score");
+// Field and ball
+let field = document.getElementById('field');
+let ball = document.getElementById('ball');
+let scoreText = document.getElementById('score');
+let kickSound = document.getElementById('kick');
+let goalSound = document.getElementById('goal');
 
-let px = 100, py = 200;
-let ex = 600, ey = 200;
-let bx = 300, by = 200;
+let bx = window.innerWidth / 2;
+let by = window.innerHeight / 2;
+let vx = 0, vy = 0;
 
-let score1 = 0;
-let score2 = 0;
+// Player image placeholder (replace with Ronaldo etc.)
+let playerImg = "https://i.imgur.com/QZ6f6Kx.png";
 
-// Controls
-document.addEventListener("keydown", e => {
-    if (e.key === "ArrowUp") py -= 10;
-    if (e.key === "ArrowDown") py += 10;
-    if (e.key === "ArrowLeft") px -= 10;
-    if (e.key === "ArrowRight") px += 10;
+// Create team
+function createTeam(startX) {
+    let team = [];
+    for (let i=0;i<5;i++){
+        let p = document.createElement('div');
+        p.className = 'player';
+        p.style.backgroundImage = `url(${playerImg})`;
+        p.style.left = (startX + i*50) + 'px';
+        p.style.top = (200 + i*60) + 'px';
+        field.appendChild(p);
+        team.push(p);
+    }
+    return team;
+}
+
+let team1 = createTeam(100); // Your team
+let team2 = createTeam(window.innerWidth - 350); // Opponents
+
+let player = team1[2]; // Controlled player
+
+// Score
+let score1 = 0, score2 = 0;
+
+// Movement and controls
+document.addEventListener('keydown', e=>{
+    let x = parseInt(player.style.left);
+    let y = parseInt(player.style.top);
+
+    if (e.key === 'ArrowUp') y -= 8;
+    if (e.key === 'ArrowDown') y += 8;
+    if (e.key === 'ArrowLeft') x -= 8;
+    if (e.key === 'ArrowRight') x += 8;
+
+    player.style.left = x + 'px';
+    player.style.top = y + 'px';
+
+    if (e.key.toLowerCase() === 'p') passBall();
+    if (e.key.toLowerCase() === 's') shootBall();
 });
 
-// Game loop
-setInterval(() => {
-
-    // Move player
-    player.style.left = px + "px";
-    player.style.top = py + "px";
-
-    // Enemy AI (follow ball)
-    if (bx > ex) ex += 2;
-    if (bx < ex) ex -= 2;
-    if (by > ey) ey += 2;
-    if (by < ey) ey -= 2;
-
-    enemy.style.left = ex + "px";
-    enemy.style.top = ey + "px";
-
-    // Ball collision with player
-    if (Math.abs(px - bx) < 30 && Math.abs(py - by) < 30) {
-        bx += 10;
-    }
-
-    // Ball collision with enemy
-    if (Math.abs(ex - bx) < 30 && Math.abs(ey - by) < 30) {
-        bx -= 10;
-    }
-
-    // Move ball slowly
-    bx *= 0.99;
-
-    ball.style.left = bx + "px";
-    ball.style.top = by + "px";
-
-    // Goals
-    if (bx < 10 && by > window.innerHeight * 0.4 && by < window.innerHeight * 0.6) {
-        score2++;
-        reset();
-    }
-
-    if (bx > window.innerWidth - 10 && by > window.innerHeight * 0.4 && by < window.innerHeight * 0.6) {
-        score1++;
-        reset();
-    }
-
-    scoreText.innerText = score1 + " - " + score2;
-
-}, 30);
-
-function reset() {
-    bx = window.innerWidth / 2;
-    by = window.innerHeight / 2;
+// Pass
+function passBall() {
+    kickSound.play();
+    let mate = team1[Math.floor(Math.random()*team1.length)];
+    vx = (parseInt(mate.style.left)-bx)/10;
+    vy = (parseInt(mate.style.top)-by)/10;
 }
+
+// Shoot
+function shootBall() {
+    kickSound.play();
+    vx = 12;
+    vy = (Math.random()-0.5)*6;
+}
+
+// Reset ball after goal
+function resetBall() {
+    bx = window.innerWidth/2;
+    by = window.innerHeight/2;
+    vx = 0; vy = 0;
+}
+
+// Game loop
+setInterval(()=>{
+    // Ball physics
+    bx += vx; by += vy;
+    vx *= 0.95; vy *= 0.95;
+
+    // Teammates support
+    team1.forEach(p=>{
+        if(p!==player){
+            let x = parseInt(p.style.left);
+            let y = parseInt(p.style.top);
+            if(Math.abs(x-bx)>50) x += (bx>x?1:-1);
+            if(Math.abs(y-by)>50) y += (by>y?1:-1);
+            p.style.left = x+'px';
+            p.style.top = y+'px';
+        }
+    });
+
+    // Opponents mark players
+    team2.forEach((p,i)=>{
+        let target = team1[i];
+        let x = parseInt(p.style.left);
+        let y = parseInt(p.style.top);
+        let tx = parseInt(target.style.left);
+        let ty = parseInt(target.style.top);
+        x += (tx>x?1:-1);
+        y += (ty>y?1:-1);
+        p.style.left = x+'px';
+        p.style.top = y+'px';
+    });
+
+    // Collision
+    [...team1,...team2].forEach(p=>{
+        let x = parseInt(p.style.left);
+        let y = parseInt(p.style.top);
+        if(Math.abs(x-bx)<20 && Math.abs(y-by)<20){
+            vx += (bx-x)/5;
+            vy += (by-y)/5;
+        }
+    });
+
+    // Goal detection
+    if(bx<10){ score2++; goalSound.play(); resetBall(); }
+    if(bx>window.innerWidth-10){ score1++; goalSound.play(); resetBall(); }
+
+    // Update ball
+    ball.style.left = bx+'px';
+    ball.style.top = by+'px';
+
+    // Update score
+    scoreText.innerText = score1+' - '+score2;
+},30);
+
 </script>
 
 </body>
