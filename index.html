@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Mini Football Game</title>
+
+<style>
+body {
+    margin: 0;
+    overflow: hidden;
+    background: green;
+}
+
+#field {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    background: linear-gradient(#0a5, #070);
+}
+
+.player, .ball, .enemy {
+    position: absolute;
+    border-radius: 50%;
+}
+
+.player {
+    width: 40px;
+    height: 40px;
+    background: blue;
+}
+
+.enemy {
+    width: 40px;
+    height: 40px;
+    background: red;
+}
+
+.ball {
+    width: 20px;
+    height: 20px;
+    background: white;
+}
+
+.goal {
+    position: absolute;
+    width: 20px;
+    height: 100px;
+    background: white;
+}
+
+#goal1 { left: 0; top: 40%; }
+#goal2 { right: 0; top: 40%; }
+
+#score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: white;
+    font-size: 20px;
+}
+</style>
+
+</head>
+
+<body>
+
+<div id="field">
+    <div id="player" class="player"></div>
+    <div id="enemy" class="enemy"></div>
+    <div id="ball" class="ball"></div>
+
+    <div id="goal1" class="goal"></div>
+    <div id="goal2" class="goal"></div>
+
+    <div id="score">0 - 0</div>
+</div>
+
+<script>
+let player = document.getElementById("player");
+let enemy = document.getElementById("enemy");
+let ball = document.getElementById("ball");
+let scoreText = document.getElementById("score");
+
+let px = 100, py = 200;
+let ex = 600, ey = 200;
+let bx = 300, by = 200;
+
+let score1 = 0;
+let score2 = 0;
+
+// Controls
+document.addEventListener("keydown", e => {
+    if (e.key === "ArrowUp") py -= 10;
+    if (e.key === "ArrowDown") py += 10;
+    if (e.key === "ArrowLeft") px -= 10;
+    if (e.key === "ArrowRight") px += 10;
+});
+
+// Game loop
+setInterval(() => {
+
+    // Move player
+    player.style.left = px + "px";
+    player.style.top = py + "px";
+
+    // Enemy AI (follow ball)
+    if (bx > ex) ex += 2;
+    if (bx < ex) ex -= 2;
+    if (by > ey) ey += 2;
+    if (by < ey) ey -= 2;
+
+    enemy.style.left = ex + "px";
+    enemy.style.top = ey + "px";
+
+    // Ball collision with player
+    if (Math.abs(px - bx) < 30 && Math.abs(py - by) < 30) {
+        bx += 10;
+    }
+
+    // Ball collision with enemy
+    if (Math.abs(ex - bx) < 30 && Math.abs(ey - by) < 30) {
+        bx -= 10;
+    }
+
+    // Move ball slowly
+    bx *= 0.99;
+
+    ball.style.left = bx + "px";
+    ball.style.top = by + "px";
+
+    // Goals
+    if (bx < 10 && by > window.innerHeight * 0.4 && by < window.innerHeight * 0.6) {
+        score2++;
+        reset();
+    }
+
+    if (bx > window.innerWidth - 10 && by > window.innerHeight * 0.4 && by < window.innerHeight * 0.6) {
+        score1++;
+        reset();
+    }
+
+    scoreText.innerText = score1 + " - " + score2;
+
+}, 30);
+
+function reset() {
+    bx = window.innerWidth / 2;
+    by = window.innerHeight / 2;
+}
+</script>
+
+</body>
+</html>
